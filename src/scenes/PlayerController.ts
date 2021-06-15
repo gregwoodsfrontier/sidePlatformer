@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
 import StateMachine from '../statemachine/StateMachine'
-import { AnimKeys, ImageKeys, JSONKeys } from './keys'
+import { AnimKeys, ImageKeys, EventKeys } from './keys'
 import { sharedInstance as events } from './EventCenter'
 import ObstaclesController from './ObstaclesController'
 
@@ -36,10 +36,37 @@ export default class PlayerController
 			.setState('idle');
 
 		this.sprite.setOnCollide((data: MatterJS.ICollisionPair) => {
-			if (this.stateMachine.isCurrentState('jump'))
+			const body = data.bodyB as MatterJS.BodyType
+			const gameObject = body.gameObject
+
+			if (!gameObject)
 			{
-				this.stateMachine.setState('idle');
-			} 
+				return
+			}
+
+			if (gameObject instanceof Phaser.Physics.Matter.TileBody)
+			{
+				if (this.stateMachine.isCurrentState('jump'))
+				{
+					this.stateMachine.setState('idle');
+				}
+
+				return 
+			}
+
+			const sprite = gameObject as Phaser.Physics.Matter.Sprite
+			const type = sprite.getData('type')
+
+			switch (type)
+			{
+				case 'star':
+					{
+						events.emit(EventKeys.starsCollected)
+						sprite.destroy();
+						break
+					}
+			}
+			
 		});
 
 	}

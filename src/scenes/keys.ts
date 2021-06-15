@@ -2,6 +2,8 @@ export enum ImageKeys
 {
     penquin = 'penquin',
     tiles = 'tiles',
+    star = 'star',
+    spikes = 'spike',
 }
 
 export enum SceneKeys
@@ -26,4 +28,9 @@ export enum AnimKeys
 export enum ColorKeys
 {
     lightCyan = '#ccffff',
+}
+
+export enum EventKeys
+{
+    starsCollected = 'star-collected'
 }

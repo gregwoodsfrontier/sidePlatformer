@@ -22,6 +22,8 @@ export default class Game extends Phaser.Scene
 
 	create()
 	{
+		this.scene.launch('ui')
+
 		const map = this.make.tilemap({
 			key: JSONKeys.tilemap,
 		});
@@ -50,6 +52,20 @@ export default class Game extends Phaser.Scene
 					.setFixedRotation();
 					this.playerController = new PlayerController(this.penquin, this.cursors);
 					this.cameras.main.startFollow(this.penquin);
+
+					//this.matter.add.sprite(x, y-100, ImageKeys.star);
+					break;
+				}
+
+				case 'star':
+				{
+					const star = this.matter.add.sprite(x, y, ImageKeys.star, undefined, {
+						isStatic: true,
+						isSensor: true,
+						
+					});
+
+					star.setData('type', 'star')
 					break;
 				}
 			}
