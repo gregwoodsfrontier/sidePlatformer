@@ -74,15 +74,70 @@
                  "y":280
                 }, 
                 {
-                 "height":69.3333333333334,
+                 "height":69.3333,
                  "id":10,
                  "name":"penguin-spawn",
                  "rotation":0,
                  "type":"",
                  "visible":true,
                  "width":68,
-                 "x":386.666666666667,
-                 "y":698.666666666667
+                 "x":386.667,
+                 "y":698.667
+                }, 
+                {
+                 "height":62.6666666666666,
+                 "id":11,
+                 "name":"star",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":65.3333333333333,
+                 "x":525.333333333333,
+                 "y":422.666666666667
+                }, 
+                {
+                 "height":62.6666666666666,
+                 "id":12,
+                 "name":"star",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":65.3333333333333,
+                 "x":797.333333333333,
+                 "y":284
+                }, 
+                {
+                 "height":62.6666666666666,
+                 "id":13,
+                 "name":"star",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":65.3333333333333,
+                 "x":1086.66666666667,
+                 "y":145.333333333333
+                }, 
+                {
+                 "height":62.6666666666666,
+                 "id":14,
+                 "name":"star",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":65.3333333333333,
+                 "x":916,
+                 "y":166.666666666667
+                }, 
+                {
+                 "height":62.6666666666666,
+                 "id":15,
+                 "name":"star",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":65.3333333333333,
+                 "x":668,
+                 "y":317.333333333333
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -91,7 +146,7 @@
          "y":0
         }],
  "nextlayerid":5,
- "nextobjectid":11,
+ "nextobjectid":16,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.7.0",
