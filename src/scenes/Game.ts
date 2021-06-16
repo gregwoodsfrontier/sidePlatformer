@@ -9,6 +9,7 @@ export default class Game extends Phaser.Scene
 	private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
 	private penquin?: Phaser.Physics.Matter.Sprite;
 	private playerController?: PlayerController;
+	private obstacles!: ObstaclesController;
 
 	constructor()
 	{
@@ -18,6 +19,7 @@ export default class Game extends Phaser.Scene
 	init()
 	{
 		this.cursors = this.input.keyboard.createCursorKeys();
+		this.obstacles = new ObstaclesController()
 	}
 
 	create()
@@ -31,6 +33,7 @@ export default class Game extends Phaser.Scene
 
 		const ground = map.createLayer('ground', tileset, 0, 0);
 		const background = map.createLayer('background', tileset, 0, 0);
+		map.createLayer('obstacles', tileset);
 
 		ground.setCollisionByProperty({
 			collides: true
@@ -41,8 +44,7 @@ export default class Game extends Phaser.Scene
 		const objectsLayer = map.getObjectLayer('objects')
 
 		objectsLayer.objects.forEach(objData => {
-			const {width, height} = this.scale;
-			const {x = width*0.5, y = height*1.3, name} = objData
+			const {x = 0, y = 0, name, width = 0, height = 0} = objData
 
 			switch (name)
 			{
@@ -50,7 +52,9 @@ export default class Game extends Phaser.Scene
 				{
 					this.penquin = this.matter.add.sprite(x, y, ImageKeys.penquin)
 					.setFixedRotation();
-					this.playerController = new PlayerController(this.penquin, this.cursors);
+					this.playerController = new PlayerController(this, this.penquin,
+						this.cursors,
+						this.obstacles);
 					this.cameras.main.startFollow(this.penquin);
 
 					//this.matter.add.sprite(x, y-100, ImageKeys.star);
@@ -68,6 +72,15 @@ export default class Game extends Phaser.Scene
 					star.setData('type', 'star')
 					break;
 				}
+
+				case 'spikes':
+					{
+						const spikes = this.matter.add.rectangle(x + (width/2), y + (height/2), width, height, {
+							isStatic: true,
+						})
+						this.obstacles.add('spikes', spikes)
+						break
+					}
 			}
 		})
 
