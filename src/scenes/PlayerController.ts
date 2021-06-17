@@ -12,6 +12,7 @@ export default class PlayerController
 	private stateMachine: StateMachine
 	private cursors: CursorKeys
 	private obstacles: ObstaclesController
+	private playerHealth = 100
 
 	constructor(scene: Phaser.Scene, sprite: Phaser.Physics.Matter.Sprite,
 		cursors: CursorKeys,
@@ -41,6 +42,9 @@ export default class PlayerController
 			.addState('spike-hit', {
 				onEnter: this.spikeHitOnEnter
 			})
+			.addState('dead', {
+				onEnter: this.deadOnEnter
+			})
 			.setState('idle');
 
 		this.sprite.setOnCollide((data: MatterJS.ICollisionPair) => {
@@ -48,6 +52,11 @@ export default class PlayerController
 			//console.log('body')
 			if (this.obstacles.is('spikes', body))
 			{
+				if (this.stateMachine.isCurrentState('dead'))
+				{
+					return
+				}
+
 				this.stateMachine.setState('spike-hit')
 				return
 			}
@@ -75,25 +84,42 @@ export default class PlayerController
 			switch (type)
 			{
 				case 'star':
-					{
-						events.emit(EventKeys.starsCollected)
-						sprite.destroy();
-						break
-					}
+				{
+					events.emit(EventKeys.starsCollected)
+					sprite.destroy();
+					break
+				}
+
+				case 'health':
+				{
+					const value = sprite.getData('healthPoints') ?? 10
+					this.playerHealth = Phaser.Math.Clamp(this.playerHealth + value, 0, 100)
+					events.emit(EventKeys.healthChanged, this.playerHealth)
+					sprite.destroy()
+					break
+				}
 			}
 			
 		});
 
 	}
 
+	private deadOnEnter()
+	{
+		this.sprite.play(AnimKeys.playerDie, true)
+	}
+
 	private spikeHitOnEnter()
 	{
 		this.sprite.setVelocityY(-12)
+		this.playerHealth = Phaser.Math.Clamp(this.playerHealth - 10, 0, 100)
+		
+		events.emit(EventKeys.healthChanged, this.playerHealth)
 
 		const startColor = Phaser.Display.Color.ValueToColor(0xffffff)
 		const endColor = Phaser.Display.Color.ValueToColor(0xff0000)
 
-		this.scene.tweens.addCounter({
+		const spikeTween = this.scene.tweens.addCounter({
 			from: 0,
 			to: 100,
 			duration: 100,
@@ -138,6 +164,11 @@ export default class PlayerController
 		if (spaceJustPressed)
 		{
 			this.stateMachine.setState('jump')
+		}
+
+		if (this.playerHealth <= 0)
+		{
+			this.stateMachine.setState('dead')
 		}
 
 	}
@@ -204,6 +235,17 @@ export default class PlayerController
                 start: 1,
                 end: 3,
                 prefix: 'penguin_jump0',
+                suffix: '.png'
+            })
+        });
+
+		this.sprite.anims.create({
+            key: AnimKeys.playerDie,
+            frameRate: 10,
+            frames: this.sprite.anims.generateFrameNames(ImageKeys.penquin, {
+                start: 1,
+                end: 4,
+                prefix: 'penguin_die0',
                 suffix: '.png'
             })
         });

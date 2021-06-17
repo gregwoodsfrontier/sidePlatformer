@@ -4,6 +4,7 @@ export enum ImageKeys
     tiles = 'tiles',
     star = 'star',
     spikes = 'spike',
+    health = 'health'
 }
 
 export enum SceneKeys
@@ -32,5 +33,6 @@ export enum ColorKeys
 
 export enum EventKeys
 {
-    starsCollected = 'star-collected'
+    starsCollected = 'star-collected',
+    healthChanged = 'health-changed',
 }

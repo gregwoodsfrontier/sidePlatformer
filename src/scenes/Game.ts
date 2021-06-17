@@ -56,8 +56,6 @@ export default class Game extends Phaser.Scene
 						this.cursors,
 						this.obstacles);
 					this.cameras.main.startFollow(this.penquin);
-
-					//this.matter.add.sprite(x, y-100, ImageKeys.star);
 					break;
 				}
 
@@ -74,13 +72,25 @@ export default class Game extends Phaser.Scene
 				}
 
 				case 'spikes':
-					{
-						const spikes = this.matter.add.rectangle(x + (width/2), y + (height/2), width, height, {
-							isStatic: true,
-						})
-						this.obstacles.add('spikes', spikes)
-						break
-					}
+				{
+					const spikes = this.matter.add.rectangle(x + (width/2), y + (height/2), width, height, {
+						isStatic: true,
+					})
+					this.obstacles.add('spikes', spikes)
+					break
+				}
+				
+				case 'health':
+				{
+					const health = this.matter.add.sprite(x + (width/2) , y + (height/2), ImageKeys.health, undefined, {
+						isStatic: true,
+						isSensor: true
+					})
+
+					health.setData('type', 'health')
+					health.setData('healthPoints', 10)
+					break
+				} 
 			}
 		})
 
