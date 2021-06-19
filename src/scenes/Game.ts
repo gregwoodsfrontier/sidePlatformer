@@ -10,6 +10,7 @@ export default class Game extends Phaser.Scene
 	private penquin?: Phaser.Physics.Matter.Sprite;
 	private playerController?: PlayerController;
 	private obstacles!: ObstaclesController;
+	private snowmans: SnowmanController[] = []
 
 	constructor()
 	{
@@ -20,6 +21,7 @@ export default class Game extends Phaser.Scene
 	{
 		this.cursors = this.input.keyboard.createCursorKeys();
 		this.obstacles = new ObstaclesController()
+		this.snowmans = []
 	}
 
 	create()
@@ -90,11 +92,21 @@ export default class Game extends Phaser.Scene
 					health.setData('type', 'health')
 					health.setData('healthPoints', 10)
 					break
-				} 
+				}
+				
+				case 'snowman':
+				{
+					const snowman = this.matter.add.sprite(x + (width/2), y + (height/2), ImageKeys.snowman)
+					.setFixedRotation();
+					this.snowmans.push(new SnowmanController(this, snowman))
+					this.obstacles.add('snowman', snowman.body as MatterJS.BodyType)
+					break
+				}
 			}
 		})
 
 		this.matter.world.convertTilemapLayer(ground);
+		console.log(this.obstacles)
 	}
 
 	destroy()
@@ -104,14 +116,11 @@ export default class Game extends Phaser.Scene
 
 	update(t: number, dt: number)
 	{
-		if (!this.playerController)
-		{
-			return
-		}
+		this.playerController?.update(dt)
 
-		this.playerController.update(dt);
+		// update the controller for each snowman
+		this.snowmans.forEach(snowman => snowman.update(dt))
 
 	}
 
-	
 }

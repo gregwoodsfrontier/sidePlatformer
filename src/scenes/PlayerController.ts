@@ -14,6 +14,8 @@ export default class PlayerController
 	private obstacles: ObstaclesController
 	private playerHealth = 100
 
+	private lastSnowman?: Phaser.Physics.Matter.Sprite
+
 	constructor(scene: Phaser.Scene, sprite: Phaser.Physics.Matter.Sprite,
 		cursors: CursorKeys,
 		obstacles: ObstaclesController)
@@ -45,6 +47,12 @@ export default class PlayerController
 			.addState('dead', {
 				onEnter: this.deadOnEnter
 			})
+			.addState('snowman-stomp', {
+				onEnter: this.snowmanStompOnEnter
+			})
+			.addState('snowman-hit', {
+				onEnter: this.snowmanHitOnEnter
+			})
 			.setState('idle');
 
 		this.sprite.setOnCollide((data: MatterJS.ICollisionPair) => {
@@ -58,6 +66,23 @@ export default class PlayerController
 				}
 
 				this.stateMachine.setState('spike-hit')
+				return
+			}
+
+			if (this.obstacles.is('snowman', body))
+			{
+				this.lastSnowman = body.gameObject
+
+				if (this.sprite.y < body.position.y)
+				{
+					// stomp on snowman
+					this.stateMachine.setState('snowman-stomp')
+				}
+				else
+				{
+					// hit by snowman
+					this.stateMachine.setState('snowman-hit')
+				}
 				return
 			}
 
@@ -102,6 +127,63 @@ export default class PlayerController
 			
 		});
 
+	}
+
+	private snowmanStompOnEnter()
+	{
+
+	}
+
+	private snowmanHitOnEnter()
+	{
+		if (this.lastSnowman)
+		{
+			if (this.sprite.x < this.lastSnowman.x)
+			{
+				this.sprite.setVelocityX(-20)
+			}
+			else
+			{
+				this.sprite.setVelocityX(20)
+			}
+		}
+		else
+		{
+			this.sprite.setVelocityY(-20)
+		}
+
+		const startColor = Phaser.Display.Color.ValueToColor(0xffffff)
+		const endColor = Phaser.Display.Color.ValueToColor(0x0000ff)
+
+		this.scene.tweens.addCounter({
+			from: 0,
+			to: 100,
+			duration: 100,
+			repeat: 2,
+			yoyo: true,
+			ease: Phaser.Math.Easing.Sine.InOut,
+			onUpdate: tween => {
+				const value = tween.getValue()
+				const colorObject = Phaser.Display.Color.Interpolate.ColorWithColor(
+					startColor,
+					endColor,
+					100,
+					value
+				)
+
+				const color = Phaser.Display.Color.GetColor(
+					colorObject.r,
+					colorObject.g,
+					colorObject.b
+				)
+
+				this.sprite.setTint(color)
+			}
+		})
+
+		this.stateMachine.setState('idle')
+
+		//this.setHealth(this.health - 25)
 	}
 
 	private deadOnEnter()

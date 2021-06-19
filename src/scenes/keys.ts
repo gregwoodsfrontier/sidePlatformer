@@ -4,7 +4,8 @@ export enum ImageKeys
     tiles = 'tiles',
     star = 'star',
     spikes = 'spike',
-    health = 'health'
+    health = 'health',
+    snowman = 'snowman'
 }
 
 export enum SceneKeys
@@ -23,7 +24,10 @@ export enum AnimKeys
     playerWalk = 'player-walk',
     playerIdle = 'player-idle',
     playerJump = 'player-jump',
-    playerDie = 'player-die'
+    playerDie = 'player-die',
+    snowmanIdle = 'snowman-idle',
+    walkLeft = 'walk-left',
+    walkRight = 'walk-right'
 }
 
 export enum ColorKeys

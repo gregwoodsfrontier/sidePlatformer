@@ -554,8 +554,8 @@
 </data>
  </layer>
  <objectgroup id="2" name="objects">
-  <object id="7" name="snowman" x="1152.67" y="697.333" width="70" height="70"/>
-  <object id="8" name="snowman" x="2058" y="278.667" width="70" height="70"/>
+  <object id="7" name="snowman" x="1047.34" y="674.666" width="70" height="70"/>
+  <object id="8" name="snowman" x="1963.33" y="261.334" width="70" height="70"/>
   <object id="10" name="penguin-spawn" x="386.667" y="698.667" width="68" height="69.3333"/>
   <object id="11" name="star" x="525.333" y="422.667" width="65.3333" height="62.6667"/>
   <object id="12" name="star" x="797.333" y="284" width="65.3333" height="62.6667"/>

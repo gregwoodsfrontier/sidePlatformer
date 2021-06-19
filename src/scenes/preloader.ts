@@ -15,6 +15,7 @@ export default class Preloader extends Phaser.Scene
         this.load.tilemapTiledJSON(JSONKeys.tilemap, 'assets/game.json');
         this.load.image(ImageKeys.star, 'assets/star.png');
         this.load.image(ImageKeys.health, 'assets/health.png')
+        this.load.atlas(ImageKeys.snowman, 'assets/snowman.png', 'assets/snowman.json')
     }
 
     create()
