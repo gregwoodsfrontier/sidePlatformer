@@ -1,70 +1,65 @@
 import Phaser from 'phaser'
 import StateMachine from '../statemachine/StateMachine'
-import { AnimKeys, ImageKeys, EventKeys } from './keys'
 import { sharedInstance as events } from './EventCenter'
 import ObstaclesController from './ObstaclesController'
 
 type CursorKeys = Phaser.Types.Input.Keyboard.CursorKeys
+
 export default class PlayerController
 {
 	private scene: Phaser.Scene
 	private sprite: Phaser.Physics.Matter.Sprite
-	private stateMachine: StateMachine
 	private cursors: CursorKeys
 	private obstacles: ObstaclesController
-	private playerHealth = 100
+
+	private stateMachine: StateMachine
+	private health = 100
 
 	private lastSnowman?: Phaser.Physics.Matter.Sprite
 
-	constructor(scene: Phaser.Scene, sprite: Phaser.Physics.Matter.Sprite,
-		cursors: CursorKeys,
-		obstacles: ObstaclesController)
+	constructor(scene: Phaser.Scene, sprite: Phaser.Physics.Matter.Sprite, cursors: CursorKeys, obstacles: ObstaclesController)
 	{
-		this.scene = scene;
-		this.sprite = sprite;
-		this.cursors = cursors;
-		this.obstacles = obstacles; 
+		this.scene = scene
+		this.sprite = sprite
+		this.cursors = cursors
+		this.obstacles = obstacles
 
-		this.createAnimations();
+		this.createAnimations()
 
 		this.stateMachine = new StateMachine(this, 'player')
 
 		this.stateMachine.addState('idle', {
 			onEnter: this.idleOnEnter,
-			onUpdate: this.idleOnUpdate,
+			onUpdate: this.idleOnUpdate
 		})
-			.addState('walk', {
-				onEnter: this.walkOnEnter,
-				onUpdate: this.walkOnUpdate,
-			})
-			.addState('jump', {
-				onEnter: this.jumpOnEnter,
-				onUpdate: this.jumpOnUpdate,
-			})
-			.addState('spike-hit', {
-				onEnter: this.spikeHitOnEnter
-			})
-			.addState('dead', {
-				onEnter: this.deadOnEnter
-			})
-			.addState('snowman-stomp', {
-				onEnter: this.snowmanStompOnEnter
-			})
-			.addState('snowman-hit', {
-				onEnter: this.snowmanHitOnEnter
-			})
-			.setState('idle');
+		.addState('walk', {
+			onEnter: this.walkOnEnter,
+			onUpdate: this.walkOnUpdate,
+			onExit: this.walkOnExit
+		})
+		.addState('jump', {
+			onEnter: this.jumpOnEnter,
+			onUpdate: this.jumpOnUpdate
+		})
+		.addState('spike-hit', {
+			onEnter: this.spikeHitOnEnter
+		})
+		.addState('snowman-hit', {
+			onEnter: this.snowmanHitOnEnter
+		})
+		.addState('snowman-stomp', {
+			onEnter: this.snowmanStompOnEnter
+		})
+		.addState('dead', {
+			onEnter: this.deadOnEnter
+		})
+		.setState('idle')
 
 		this.sprite.setOnCollide((data: MatterJS.ICollisionPair) => {
 			const body = data.bodyB as MatterJS.BodyType
-			//console.log('body')
+
 			if (this.obstacles.is('spikes', body))
 			{
-				if (this.stateMachine.isCurrentState('dead'))
-				{
-					return
-				}
-
 				this.stateMachine.setState('spike-hit')
 				return
 			}
@@ -72,7 +67,6 @@ export default class PlayerController
 			if (this.obstacles.is('snowman', body))
 			{
 				this.lastSnowman = body.gameObject
-
 				if (this.sprite.y < body.position.y)
 				{
 					// stomp on snowman
@@ -97,10 +91,9 @@ export default class PlayerController
 			{
 				if (this.stateMachine.isCurrentState('jump'))
 				{
-					this.stateMachine.setState('idle');
+					this.stateMachine.setState('idle')
 				}
-
-				return 
+				return
 			}
 
 			const sprite = gameObject as Phaser.Physics.Matter.Sprite
@@ -110,28 +103,154 @@ export default class PlayerController
 			{
 				case 'star':
 				{
-					events.emit(EventKeys.starsCollected)
-					sprite.destroy();
+					events.emit('star-collected')
+					sprite.destroy()
 					break
 				}
 
 				case 'health':
 				{
-					const value = sprite.getData('healthPoints') ?? 10
-					this.playerHealth = Phaser.Math.Clamp(this.playerHealth + value, 0, 100)
-					events.emit(EventKeys.healthChanged, this.playerHealth)
+					const value = sprite.getData('healthPoints') ?? 10 
+					this.health = Phaser.Math.Clamp(this.health + value, 0, 100)
+					events.emit('health-changed', this.health)
 					sprite.destroy()
 					break
 				}
 			}
-			
-		});
-
+		})
 	}
 
-	private snowmanStompOnEnter()
+	update(dt: number)
 	{
+		this.stateMachine.update(dt)
+	}
 
+	private setHealth(value: number)
+	{
+		this.health = Phaser.Math.Clamp(value, 0, 100)
+
+		events.emit('health-changed', this.health)
+
+		// TODO: check for death
+		if (this.health <= 0)
+		{
+			this.stateMachine.setState('dead')
+		}
+	}
+
+	private idleOnEnter()
+	{
+		this.sprite.play('player-idle')
+	}
+
+	private idleOnUpdate()
+	{
+		if (this.cursors.left.isDown || this.cursors.right.isDown)
+		{
+			this.stateMachine.setState('walk')
+		}
+
+		const spaceJustPressed = Phaser.Input.Keyboard.JustDown(this.cursors.space)
+		if (spaceJustPressed)
+		{
+			this.stateMachine.setState('jump')
+		}
+	}
+
+	private walkOnEnter()
+	{
+		this.sprite.play('player-walk')
+	}
+
+	private walkOnUpdate()
+	{
+		const speed = 5
+
+		if (this.cursors.left.isDown)
+		{
+			this.sprite.flipX = true
+			this.sprite.setVelocityX(-speed)
+		}
+		else if (this.cursors.right.isDown)
+		{
+			this.sprite.flipX = false
+			this.sprite.setVelocityX(speed)
+		}
+		else
+		{
+			this.sprite.setVelocityX(0)
+			this.stateMachine.setState('idle')
+		}
+
+		const spaceJustPressed = Phaser.Input.Keyboard.JustDown(this.cursors.space)
+		if (spaceJustPressed)
+		{
+			this.stateMachine.setState('jump')
+		}
+	}
+
+	private walkOnExit()
+	{
+		this.sprite.stop()
+	}
+
+	private jumpOnEnter()
+	{
+		this.sprite.setVelocityY(-12)
+	}
+
+	private jumpOnUpdate()
+	{
+		const speed = 5
+
+		if (this.cursors.left.isDown)
+		{
+			this.sprite.flipX = true
+			this.sprite.setVelocityX(-speed)
+		}
+		else if (this.cursors.right.isDown)
+		{
+			this.sprite.flipX = false
+			this.sprite.setVelocityX(speed)
+		}
+	}
+
+	private spikeHitOnEnter()
+	{
+		this.sprite.setVelocityY(-12)
+
+		const startColor = Phaser.Display.Color.ValueToColor(0xffffff)
+		const endColor = Phaser.Display.Color.ValueToColor(0xff0000)
+
+		this.scene.tweens.addCounter({
+			from: 0,
+			to: 100,
+			duration: 100,
+			repeat: 2,
+			yoyo: true,
+			ease: Phaser.Math.Easing.Sine.InOut,
+			onUpdate: tween => {
+				const value = tween.getValue()
+				const colorObject = Phaser.Display.Color.Interpolate.ColorWithColor(
+					startColor,
+					endColor,
+					100,
+					value
+				)
+
+				const color = Phaser.Display.Color.GetColor(
+					colorObject.r,
+					colorObject.g,
+					colorObject.b
+				)
+
+				this.sprite.setTint(color)
+			}
+		})
+
+		this.stateMachine.setState('idle')
+
+		this.setHealth(this.health - 10)
 	}
 
 	private snowmanHitOnEnter()
@@ -183,188 +302,58 @@ export default class PlayerController
 
 		this.stateMachine.setState('idle')
 
-		//this.setHealth(this.health - 25)
+		this.setHealth(this.health - 25)
 	}
 
-	private deadOnEnter()
+	private snowmanStompOnEnter()
 	{
-		this.sprite.play(AnimKeys.playerDie, true)
-	}
+		this.sprite.setVelocityY(-10)
 
-	private spikeHitOnEnter()
-	{
-		this.sprite.setVelocityY(-12)
-		this.playerHealth = Phaser.Math.Clamp(this.playerHealth - 10, 0, 100)
-		
-		events.emit(EventKeys.healthChanged, this.playerHealth)
-
-		const startColor = Phaser.Display.Color.ValueToColor(0xffffff)
-		const endColor = Phaser.Display.Color.ValueToColor(0xff0000)
-
-		const spikeTween = this.scene.tweens.addCounter({
-			from: 0,
-			to: 100,
-			duration: 100,
-			repeat: 2,
-			yoyo: true,
-			ease: Phaser.Math.Easing.Sine.InOut,
-			onUpdate: tween => {
-				const value = tween.getValue()
-				const colorObject = Phaser.Display.Color.Interpolate.ColorWithColor(
-					startColor,
-					endColor,
-					100,
-					value
-				)
-
-				const color = Phaser.Display.Color.GetColor(
-					colorObject.r,
-					colorObject.g,
-					colorObject.b
-				)
-
-				this.sprite.setTint(color)
-			}
-		})
+		events.emit('snowman-stomped', this.lastSnowman)
 
 		this.stateMachine.setState('idle')
 	}
 
-	private idleOnEnter()
+	private deadOnEnter()
 	{
-		this.sprite.play(AnimKeys.playerIdle);
-	}
+		this.sprite.play('player-death')
 
-	private idleOnUpdate()
-	{
-		if (this.cursors.left.isDown || this.cursors.right.isDown)
-		{
-			this.stateMachine.setState('walk')
-		}
+		this.sprite.setOnCollide(() => {})
 
-		const spaceJustPressed = Phaser.Input.Keyboard.JustDown(this.cursors.space);
-		if (spaceJustPressed)
-		{
-			this.stateMachine.setState('jump')
-		}
-
-		if (this.playerHealth <= 0)
-		{
-			this.stateMachine.setState('dead')
-		}
-
-	}
-
-	private walkOnEnter()
-	{
-		this.sprite.play(AnimKeys.playerWalk);
-	}
-
-	private walkOnUpdate()
-	{
-		this.handlePlayerInput();
-	}
-
-	private jumpOnEnter()
-	{
-		this.sprite.setVelocityY(-13);
-		this.sprite.play(AnimKeys.playerJump);
-	}
-
-	private jumpOnUpdate()
-	{
-		const speed = 5;
-
-		if (this.cursors.right.isDown)
-		{
-			this.sprite.setVelocityX(speed);
-			this.sprite.flipX = false;
-		}
-		else if (this.cursors.left.isDown)
-		{
-			this.sprite.setVelocityX(-speed);
-			this.sprite.flipX = true;
-		}
-		
+		this.scene.time.delayedCall(1500, () => {
+			this.scene.scene.start('game-over')
+		})
 	}
 
 	private createAnimations()
-    {
-        this.sprite.anims.create({
-            key: AnimKeys.playerIdle,
-            frames: [{
-                key: ImageKeys.penquin,
-                frame: 'penguin_walk01.png'
-            }]
-        });
-
-        this.sprite.anims.create({
-            key: AnimKeys.playerWalk,
-            frameRate: 10,
-            frames: this.sprite.anims.generateFrameNames(ImageKeys.penquin, {
-                start: 1,
-                end: 4,
-                prefix: 'penguin_walk0',
-                suffix: '.png'
-            }),
-            repeat: -1
-        });
+	{
+		this.sprite.anims.create({
+			key: 'player-idle',
+			frames: [{ key: 'penquin', frame: 'penguin_walk01.png' }]
+		})
 
 		this.sprite.anims.create({
-            key: AnimKeys.playerJump,
-            frameRate: 10,
-            frames: this.sprite.anims.generateFrameNames(ImageKeys.penquin, {
-                start: 1,
-                end: 3,
-                prefix: 'penguin_jump0',
-                suffix: '.png'
-            })
-        });
+			key: 'player-walk',
+			frameRate: 10,
+			frames: this.sprite.anims.generateFrameNames('penquin', {
+				start: 1,
+				end: 4,
+				prefix: 'penguin_walk0',
+				suffix: '.png'
+			}),
+			repeat: -1
+		})
 
 		this.sprite.anims.create({
-            key: AnimKeys.playerDie,
-            frameRate: 10,
-            frames: this.sprite.anims.generateFrameNames(ImageKeys.penquin, {
-                start: 1,
-                end: 4,
-                prefix: 'penguin_die0',
-                suffix: '.png'
-            })
-        });
-    }
-
-	private handlePlayerInput()
-	{
-		const speed = 5;
-
-		if (this.cursors.right.isDown)
-		{
-			this.sprite.setVelocityX(speed);
-			
-			this.sprite.flipX = false;
-		}
-		else if (this.cursors.left.isDown)
-		{
-			this.sprite.setVelocityX(-speed);
-			this.sprite.flipX = true;
-		}
-		else
-		{
-			this.sprite.setVelocityX(0);
-			this.stateMachine.setState('idle')
-		}
-
-		const spaceJustPressed = Phaser.Input.Keyboard.JustDown(this.cursors.space);
-		if (spaceJustPressed)
-		{
-			this.stateMachine.setState('jump')
-		}
-	}
-
-	
-
-	update(dt: number)
-	{
-		this.stateMachine.update(dt);
+			key: 'player-death',
+			frames: this.sprite.anims.generateFrameNames('penquin', {
+				start: 1,
+				end: 4,
+				prefix: 'penguin_die',
+				zeroPad: 2,
+				suffix: '.png'
+			}),
+			frameRate: 10
+		})
 	}
 }

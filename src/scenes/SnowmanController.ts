@@ -1,24 +1,24 @@
 import StateMachine from '../statemachine/StateMachine'
 import { sharedInstance as events } from './EventCenter'
-import { AnimKeys, ImageKeys } from './keys'
+
 export default class SnowmanController
 {
+	private scene: Phaser.Scene
 	private sprite: Phaser.Physics.Matter.Sprite
 	private stateMachine: StateMachine
+
 	private moveTime = 0
-	private cool = 1000
-	private speed = 3
-	private scene: Phaser.Scene
 
 	constructor(scene: Phaser.Scene, sprite: Phaser.Physics.Matter.Sprite)
 	{
-		this.sprite = sprite
 		this.scene = scene
-		this.stateMachine = new StateMachine(this, ImageKeys.snowman)
+		this.sprite = sprite
+
 		this.createAnimations()
 
-		this.stateMachine
-		.addState('idle', {
+		this.stateMachine = new StateMachine(this, 'snowman')
+
+		this.stateMachine.addState('idle', {
 			onEnter: this.idleOnEnter
 		})
 		.addState('move-left', {
@@ -32,7 +32,12 @@ export default class SnowmanController
 		.addState('dead')
 		.setState('idle')
 
-		
+		events.on('snowman-stomped', this.handleStomped, this)
+	}
+
+	destroy()
+	{
+		events.off('snowman-stomped', this.handleStomped, this)
 	}
 
 	update(dt: number)
@@ -43,42 +48,38 @@ export default class SnowmanController
 	private createAnimations()
 	{
 		this.sprite.anims.create({
-			key: AnimKeys.snowmanIdle,
-			frames: [{
-				key: ImageKeys.snowman,
-				frame: 'snowman_left_1.png'
-			}],
-			repeat: -1
+			key: 'idle',
+			frames: [{ key: 'snowman', frame: 'snowman_left_1.png' }]
 		})
 
 		this.sprite.anims.create({
-			key: AnimKeys.walkLeft,
-			frames: this.sprite.anims.generateFrameNames(ImageKeys.snowman, {
+			key: 'move-left',
+			frames: this.sprite.anims.generateFrameNames('snowman', {
 				start: 1,
 				end: 2,
 				prefix: 'snowman_left_',
 				suffix: '.png'
 			}),
-			frameRate: 10,
+			frameRate: 5,
 			repeat: -1
 		})
 
 		this.sprite.anims.create({
-			key: AnimKeys.walkRight,
-			frames: this.sprite.anims.generateFrameNames(ImageKeys.snowman, {
+			key: 'move-right',
+			frames: this.sprite.anims.generateFrameNames('snowman', {
 				start: 1,
 				end: 2,
 				prefix: 'snowman_right_',
 				suffix: '.png'
 			}),
-			frameRate: 10,
+			frameRate: 5,
 			repeat: -1
 		})
 	}
-	
+
 	private idleOnEnter()
 	{
-		this.sprite.play(AnimKeys.snowmanIdle)
+		this.sprite.play('idle')
 		const r = Phaser.Math.Between(1, 100)
 		if (r < 50)
 		{
@@ -92,16 +93,16 @@ export default class SnowmanController
 
 	private moveLeftOnEnter()
 	{
-		this.sprite.play(AnimKeys.walkLeft, true)
 		this.moveTime = 0
-		
+		this.sprite.play('move-left')
 	}
 
 	private moveLeftOnUpdate(dt: number)
 	{
 		this.moveTime += dt
-		this.sprite.setVelocityX(-this.speed)
-		if (this.moveTime > this.cool)
+		this.sprite.setVelocityX(-3)
+
+		if (this.moveTime > 2000)
 		{
 			this.stateMachine.setState('move-right')
 		}
@@ -109,19 +110,40 @@ export default class SnowmanController
 
 	private moveRightOnEnter()
 	{
-		this.sprite.play(AnimKeys.walkRight, true)
 		this.moveTime = 0
-		
+		this.sprite.play('move-right')
 	}
 
 	private moveRightOnUpdate(dt: number)
 	{
 		this.moveTime += dt
-		this.sprite.setVelocityX(this.speed)
+		this.sprite.setVelocityX(3)
 
-		if (this.moveTime > this.cool)
+		if (this.moveTime > 2000)
 		{
 			this.stateMachine.setState('move-left')
 		}
+	}
+
+	private handleStomped(snowman: Phaser.Physics.Matter.Sprite)
+	{
+		if (this.sprite !== snowman)
+		{
+			return
+		}
+
+		events.off('snowman-stomped', this.handleStomped, this)
+
+		this.scene.tweens.add({
+			targets: this.sprite,
+			displayHeight: 0,
+			y: this.sprite.y + (this.sprite.displayHeight * 0.5),
+			duration: 200,
+			onComplete: () => {
+				this.sprite.destroy()
+			}
+		})
+
+		this.stateMachine.setState('dead')
 	}
 }
